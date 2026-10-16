@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="An interactive All Souls' Day spotlight for LESA: a Cloud of Witnesses memory wall, All Saints trivia, and a guided candlelight reflection.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>All Souls Day Spotlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Vigil layout: a fixed starry nave header with three chapel "doors" (tabs)
+   opening into scenes — a mural wall, a game-show altar, a candlelit chapel.
+   Single committed dark world (night vigil), so colors are literal, not themed. */
+:root{
+  --bg:#1a1326;
+  --bg-deep:#120d1c;
+  --surface:#241b33;
+  --surface-2:#2c2140;
+  --gold:#d4af37;
+  --gold-soft:#e9cf7a;
+  --gold-dim:#8a7640;
+  --ink:#f4ecdd;
+  --ink-muted:#bdadd1;
+  --ink-faint:#8577a0;
+  --line:rgba(212,175,55,.32);
+  --correct:#7fb882;
+  --wrong:#d98a7c;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:Lora,Georgia,"Times New Roman",serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  min-height:100%;
+}
+h1,h2,h3,.display{font-family:Cinzel,"Trajan Pro",Georgia,serif;letter-spacing:.02em;text-wrap:balance}
+::selection{background:var(--gold-dim);color:var(--bg-deep)}
+a{color:var(--gold-soft)}
+button{font-family:inherit}
+.container{max-width:880px;margin:0 auto}
+
+/* ---------- starfield ambience ---------- */
+.stars{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:
+  radial-gradient(ellipse at 50% -10%, #2a2043 0%, var(--bg-deep) 60%);}
+.stars span{position:absolute;width:2px;height:2px;background:var(--gold-soft);border-radius:50%;opacity:.5;animation:twinkle 4s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:.75}}
+@media (prefers-reduced-motion:reduce){.stars span{animation:none;opacity:.35}}
+
+/* ---------- header / nav ---------- */
+header.top{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+  background:linear-gradient(180deg,var(--bg-deep) 70%,transparent);
+  padding-top:max(18px,env(safe-area-inset-top,0px));
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg-deep)}
+.eyebrow{font-family:Cinzel,serif;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 .3rem}
+h1.title{font-size:clamp(1.6rem,5vw,2.3rem);text-align:center;margin:0 0 .25rem;color:var(--ink)}
+.subtitle{text-align:center;color:var(--ink-muted);font-style:italic;margin:0 0 1rem;font-size:.95rem}
+nav.tabs{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+nav.tabs button{
+  background:var(--surface);border:1px solid var(--line);color:var(--ink-muted);
+  padding:.55rem 1rem;border-radius:999px;font-size:.82rem;letter-spacing:.03em;
+  cursor:pointer;transition:background .2s,color .2s,border-color .2s;
+}
+nav.tabs button[aria-selected="true"]{background:var(--gold);color:var(--bg-deep);border-color:var(--gold);font-weight:600}
+nav.tabs button:hover{border-color:var(--gold)}
+main{padding-block:1.5rem 3rem}
+section.scene[hidden]{display:none}
+
+/* ---------- Scripture banner ---------- */
+.banner{
+  border:1px solid var(--line);background:var(--surface);border-radius:14px;
+  padding:1.1rem 1.3rem;margin-bottom:1.3rem;box-shadow:var(--shadow);
+  display:flex;gap:.9rem;align-items:center;
+}
+.banner .flame-mark{flex:0 0 auto;width:28px;height:36px;position:relative}
+.verse{font-style:italic;color:var(--ink);font-size:.95rem;line-height:1.5;margin:0}
+.verse cite{display:block;color:var(--gold);font-style:normal;font-size:.75rem;letter-spacing:.08em;margin-top:.35rem;font-family:Cinzel,serif}
+
+/* ---------- candle counter ---------- */
+.counter-row{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.counter{
+  font-family:Cinzel,serif;font-variant-numeric:tabular-nums;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+  padding:.6rem 1.1rem;text-align:center;min-width:160px;
+}
+.counter .num{font-size:1.5rem;color:var(--gold-soft);display:block}
+.counter .lbl{font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted)}
+
+/* ---------- controls row ---------- */
+.controls{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.search-wrap{flex:1 1 220px;min-width:0}
+input[type=search],input[type=text],textarea{
+  width:100%;background:var(--surface);border:1px solid var(--line);color:var(--ink);
+  padding:.6rem .8rem;border-radius:8px;font-family:Lora,serif;font-size:.92rem;
+}
+input::placeholder,textarea::placeholder{color:var(--ink-faint)}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--gold-soft);outline-offset:2px}
+.btn{
+  background:var(--gold);color:var(--bg-deep);border:none;border-radius:8px;
+  padding:.6rem 1rem;font-weight:600;font-size:.88rem;cursor:pointer;letter-spacing:.02em;
+  white-space:nowrap;transition:transform .15s,background .15s;
+}
+.btn:hover{background:var(--gold-soft)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.btn.small{padding:.4rem .7rem;font-size:.78rem}
+.btn[disabled]{opacity:.5;cursor:default}
+
+/* ---------- decade groups + cards ---------- */
+details.decade{border:1px solid var(--line);border-radius:12px;margin-bottom:.8rem;background:var(--surface);overflow:hidden}
+details.decade summary{
+  cursor:pointer;list-style:none;padding:.8rem 1rem;display:flex;justify-content:space-between;
+  align-items:center;font-family:Cinzel,serif;color:var(--gold-soft);font-size:.95rem;letter-spacing:.04em;
+}
+details.decade summary::-webkit-details-marker{display:none}
+details.decade summary .count{color:var(--ink-faint);font-family:Lora,serif;font-size:.78rem}
+details.decade summary::after{content:"+";font-size:1.1rem;color:var(--gold)}
+details.decade[open] summary::after{content:"\2212"}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.7rem;padding:0 1rem 1rem}
+.card{
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+  padding:.8rem .85rem;display:flex;flex-direction:column;gap:.45rem;min-width:0;
+}
+.card .name{font-family:Cinzel,serif;font-size:.9rem;color:var(--ink);line-height:1.25}
+.card .yr{font-size:.7rem;color:var(--ink-faint);letter-spacing:.06em}
+.card .memory{font-size:.78rem;color:var(--ink-muted);font-style:italic;line-height:1.4;margin:0}
+.card .by{font-size:.68rem;color:var(--gold-dim)}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-top:auto}
+.candle-btn{
+  display:flex;align-items:center;gap:.4rem;background:transparent;border:1px solid var(--line);
+  border-radius:999px;padding:.32rem .65rem;color:var(--ink-muted);font-size:.75rem;cursor:pointer;
+}
+.candle-btn .flame{width:10px;height:14px;position:relative;flex:0 0 auto}
+.candle-btn.lit{border-color:var(--gold);color:var(--gold-soft)}
+.candle-count{font-variant-numeric:tabular-nums;color:var(--gold-dim);font-size:.72rem}
+.hidden-by-search{display:none !important}
+
+/* flame shape, reused in banner + cards */
+.flame::before,.flame-mark::before{
+  content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:70%;height:78%;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+  background:var(--ink-faint);transition:background .25s, box-shadow .25s;
+}
+.candle-btn.lit .flame::before,.flame-mark.lit::before{
+  background:radial-gradient(circle at 50% 30%,#fff6d8,var(--gold-soft) 55%,var(--gold) 100%);
+  box-shadow:0 0 10px 2px rgba(212,175,55,.75);
+}
+.flame-mark::before{background:radial-gradient(circle at 50% 30%,#fff6d8,var(--gold-soft) 55%,var(--gold) 100%);box-shadow:0 0 10px 2px rgba(212,175,55,.6)}
+@keyframes flicker{0%,100%{transform:translateX(-50%) scale(1) rotate(0)}50%{transform:translateX(-50%) scale(1.08) rotate(-2deg)}}
+.candle-btn.lit .flame::before{animation:flicker 1.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.candle-btn.lit .flame::before{animation:none}}
+
+/* particle burst on light */
+.particle{position:fixed;width:4px;height:4px;border-radius:50%;background:var(--gold-soft);pointer-events:none;z-index:50;animation:rise 900ms ease-out forwards}
+@keyframes rise{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),-46px) scale(.3)}}
+
+/* ---------- modal ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,7,16,.72);z-index:60;display:flex;align-items:flex-end;justify-content:center;padding:0}
+.modal-backdrop[hidden]{display:none}
+@media (min-width:640px){.modal-backdrop{align-items:center}}
+.modal{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;
+  width:100%;max-width:480px;padding:1.3rem 1.2rem max(1.3rem,env(safe-area-inset-bottom,0px));
+  max-height:88vh;overflow-y:auto;box-shadow:var(--shadow);
+}
+@media (min-width:640px){.modal{border-radius:16px}}
+.modal h2{font-size:1.15rem;margin:0 0 .2rem}
+.modal p.hint{color:var(--ink-muted);font-size:.8rem;margin:0 0 1rem}
+.field{margin-bottom:.8rem}
+.field label{display:block;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.3rem}
+textarea{min-height:72px;resize:vertical}
+.modal-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem}
+.form-msg{font-size:.78rem;color:var(--correct);margin-top:.5rem;min-height:1em}
+
+/* ---------- trivia ---------- */
+.quiz-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1.3rem;box-shadow:var(--shadow)}
+.quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem}
+.score-pill{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:.3rem .8rem;font-size:.78rem;color:var(--gold-soft);font-variant-numeric:tabular-nums}
+.progress-track{height:6px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin-bottom:1.1rem}
+.progress-fill{height:100%;background:var(--gold);transition:width .35s ease}
+.q-text{font-size:1.1rem;margin:0 0 1rem;line-height:1.4}
+.opts{display:flex;flex-direction:column;gap:.55rem}
+.opt{
+  text-align:left;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+  padding:.75rem .9rem;border-radius:10px;cursor:pointer;font-size:.92rem;font-family:Lora,serif;
+  transition:border-color .15s,background .15s;
+}
+.opt:hover:not([disabled]){border-color:var(--gold)}
+.opt.correct{background:rgba(127,184,130,.18);border-color:var(--correct);color:#d9f2da}
+.opt.wrong{background:rgba(217,138,124,.18);border-color:var(--wrong);color:#f5d9d3}
+.opt[disabled]{cursor:default}
+.explain{margin-top:1rem;padding:.8rem .9rem;background:var(--surface-2);border-left:3px solid var(--gold);border-radius:6px;font-size:.85rem;color:var(--ink-muted)}
+.quiz-foot{display:flex;justify-content:flex-end;margin-top:1.1rem}
+.final-screen{text-align:center}
+.final-screen .big{font-family:Cinzel,serif;font-size:2.4rem;color:var(--gold-soft);margin:.3rem 0}
+.final-screen p{color:var(--ink-muted)}
+
+/* ---------- chapel ---------- */
+.chapel{
+  background:radial-gradient(ellipse at 50% 20%, #251a38 0%, var(--bg-deep) 70%);
+  border:1px solid var(--line);border-radius:18px;padding:2rem 1.3rem;text-align:center;position:relative;overflow:hidden;
+}
+.chapel .glow{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,.18),transparent 70%);top:-60px;left:50%;transform:translateX(-50%);pointer-events:none}
+.altar{position:relative;z-index:1;display:inline-flex;flex-direction:column;align-items:center;gap:.6rem;margin-bottom:1.2rem}
+.altar-candle{
+  width:34px;height:88px;border-radius:6px 6px 3px 3px;
+  background:linear-gradient(180deg,#f4ecdd,#d8cdb6);position:relative;cursor:pointer;border:none;padding:0;
+}
+.altar-candle .wick{position:absolute;top:-26px;left:50%;transform:translateX(-50%);width:16px;height:30px}
+.altar-candle .wick::before{
+  content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:60%;height:70%;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:var(--ink-faint);
+}
+.altar-candle.ignited .wick::before{
+  background:radial-gradient(circle at 50% 30%,#fff6d8,var(--gold-soft) 55%,var(--gold) 100%);
+  box-shadow:0 0 22px 6px rgba(212,175,55,.65);animation:flicker 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion:reduce){.altar-candle.ignited .wick::before{animation:none}}
+.altar-label{font-family:Cinzel,serif;font-size:.78rem;letter-spacing:.1em;color:var(--gold);text-transform:uppercase}
+.reflection-steps{max-width:460px;margin:0 auto;text-align:left;position:relative;z-index:1}
+.step{opacity:0;max-height:0;overflow:hidden;transition:opacity .6s ease}
+.step.visible{opacity:1;max-height:800px}
+.step h3{font-size:.95rem;color:var(--gold-soft);margin:1.1rem 0 .4rem}
+.step p{color:var(--ink);line-height:1.6;font-size:.95rem;margin:0}
+.step textarea{margin-top:.6rem}
+.step .priv-note{font-size:.72rem;color:var(--ink-faint);margin-top:.4rem}
+.chapel-actions{text-align:center;margin-top:1.3rem;position:relative;z-index:1}
+
+footer.app-foot{text-align:center;color:var(--ink-faint);font-size:.74rem;padding:1.5rem 0 2.5rem}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+
+</head>
+<body>
+<div class="stars" aria-hidden="true" id="stars"></div>
+
+<header class="top">
+  <div class="container">
+    <p class="eyebrow">LESA &middot; All Souls&rsquo; Day 2025</p>
+    <h1 class="title">November Faith Spotlight</h1>
+    <p class="subtitle">Unity &middot; Love &middot; Service</p>
+    <nav class="tabs" role="tablist" aria-label="Spotlight sections">
+      <button role="tab" aria-selected="true" aria-controls="scene-cloud" id="tab-cloud" data-scene="cloud">Cloud of Witnesses</button>
+      <button role="tab" aria-selected="false" aria-controls="scene-trivia" id="tab-trivia" data-scene="trivia">Sacred Trivia</button>
+      <button role="tab" aria-selected="false" aria-controls="scene-chapel" id="tab-chapel" data-scene="chapel">Light in the Darkness</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ===================== SCENE 1: CLOUD OF WITNESSES ===================== -->
+  <section class="scene" id="scene-cloud" role="tabpanel" aria-labelledby="tab-cloud">
+    <div class="banner">
+      <div class="flame-mark lit" aria-hidden="true"></div>
+      <p class="verse">&ldquo;Wherefore seeing we also are compassed about with so great a cloud of witnesses, let us lay aside every weight, and the sin which doth so easily beset us, and let us run with patience the race that is set before us.&rdquo;
+        <cite>Hebrews 12:1</cite>
+      </p>
+    </div>
+
+    <div class="counter-row">
+      <div class="counter">
+        <span class="num" id="candle-total">&mdash;</span>
+        <span class="lbl">Candles Lit</span>
+      </div>
+      <div class="counter">
+        <span class="num" id="names-total">242</span>
+        <span class="lbl">Names Remembered</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-wrap">
+        <label for="search" class="sr-only">Search names or years</label>
+        <input type="search" id="search" placeholder="Search a name or a year&hellip;" autocomplete="off">
+      </div>
+      <button class="btn" id="open-add">+ Add to Cloud</button>
+    </div>
+
+    <div id="custom-section" hidden>
+      <details class="decade" open>
+        <summary><span>Added by the Community</span><span class="count" id="custom-count">0</span></summary>
+        <div class="card-grid" id="custom-grid"></div>
+      </details>
+    </div>
+
+    <div id="decades"></div>
+
+    <p id="no-results" class="subtitle" hidden>No names match your search.</p>
+  </section>
+
+  <!-- ===================== SCENE 2: TRIVIA ===================== -->
+  <section class="scene" id="scene-trivia" role="tabpanel" aria-labelledby="tab-trivia" hidden>
+    <div class="quiz-card">
+      <div id="quiz-active">
+        <div class="quiz-top">
+          <span class="score-pill" id="q-progress">Question 1 of 10</span>
+          <span class="score-pill" id="q-score">Score: 0</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:10%"></div></div>
+        <p class="q-text" id="q-text"></p>
+        <div class="opts" id="q-opts"></div>
+        <div class="explain" id="q-explain" hidden></div>
+        <div class="quiz-foot">
+          <button class="btn" id="q-next" disabled>Next Question</button>
+        </div>
+      </div>
+      <div id="quiz-final" class="final-screen" hidden>
+        <p class="eyebrow" style="text-align:center">All Saints &amp; Sacred Trivia</p>
+        <p class="big" id="final-score">0 / 10</p>
+        <p id="final-msg"></p>
+        <button class="btn" id="q-restart">Play Again</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCENE 3: CHAPEL ===================== -->
+  <section class="scene" id="scene-chapel" role="tabpanel" aria-labelledby="tab-chapel" hidden>
+    <div class="chapel">
+      <div class="glow" aria-hidden="true"></div>
+      <div class="altar">
+        <button class="altar-candle" id="altar-candle" aria-pressed="false">
+          <span class="wick" aria-hidden="true"></span>
+          <span class="sr-only">Ignite the altar candle for reflection</span>
+        </button>
+        <span class="altar-label" id="altar-label">Tap to Ignite for Reflection</span>
+      </div>
+
+      <div class="reflection-steps" id="reflection-steps">
+        <div class="step" data-step="1">
+          <h3>Opening Invocation</h3>
+          <p>In the name of the Father, and of the Son, and of the Holy Spirit. Lord, we gather in this quiet moment to remember those who have gone before us marked with the sign of faith. Draw near to us as we hold them in your light.</p>
+        </div>
+        <div class="step" data-step="2">
+          <h3>Scripture Reading</h3>
+          <p>&ldquo;And this is the will of him that sent me, that every one which seeth the Son, and believeth on him, may have everlasting life: and I will raise him up at the last day.&rdquo; &mdash; John 6:40</p>
+        </div>
+        <div class="step" data-step="3">
+          <h3>Silent Prayer Intention</h3>
+          <p>Hold in your heart the name of someone you wish to remember. If you like, write it below &mdash; it stays private, here in your own browser.</p>
+          <label for="intention" class="sr-only">Your private prayer intention</label>
+          <textarea id="intention" placeholder="For whom, or for what, do you pray tonight?"></textarea>
+          <p class="priv-note">Held privately on this device. Not shared with anyone.</p>
+        </div>
+        <div class="step" data-step="4">
+          <h3>Closing Blessing</h3>
+          <p>Eternal rest grant unto them, O Lord, and let perpetual light shine upon them. May they rest in peace. Amen.</p>
+        </div>
+      </div>
+
+      <div class="chapel-actions">
+        <button class="btn ghost small" id="step-continue" hidden>Continue</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="app-foot">LESA &mdash; Lourdes Ex-Students Association &middot; All Souls&rsquo; Day 2025</footer>
+
+<!-- ===================== ADD TO CLOUD MODAL ===================== -->
+<div class="modal-backdrop" id="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Add to the Cloud</h2>
+    <p class="hint">Add a loved one or mentor to the memory wall.</p>
+    <form id="add-form">
+      <div class="field">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" required maxlength="80">
+      </div>
+      <div class="field">
+        <label for="f-year">Year (optional)</label>
+        <input type="text" id="f-year" maxlength="9" placeholder="e.g. 1995">
+      </div>
+      <div class="field">
+        <label for="f-memory">A short memory or prayer</label>
+        <textarea id="f-memory" maxlength="240" placeholder="What you'd like the community to remember&hellip;"></textarea>
+      </div>
+      <div class="field">
+        <label for="f-by">Your name</label>
+        <input type="text" id="f-by" required maxlength="60">
+      </div>
+      <p class="form-msg" id="form-msg" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost small" id="close-modal">Cancel</button>
+        <button type="submit" class="btn" id="submit-add">Add Candle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- starfield ---------------- */
+var starsEl = document.getElementById('stars');
+for (var i=0;i<60;i++){
+  var s = document.createElement('span');
+  s.style.left = (Math.random()*100)+'%';
+  s.style.top = (Math.random()*70)+'%';
+  s.style.animationDelay = (Math.random()*4)+'s';
+  starsEl.appendChild(s);
+}
+
+/* ---------------- tabs ---------------- */
+var tabs = document.querySelectorAll('nav.tabs button');
+var scenes = { cloud: document.getElementById('scene-cloud'), trivia: document.getElementById('scene-trivia'), chapel: document.getElementById('scene-chapel') };
+tabs.forEach(function(btn){
+  btn.addEventListener('click', function(){
+    tabs.forEach(function(b){ b.setAttribute('aria-selected', b===btn ? 'true':'false'); });
+    Object.keys(scenes).forEach(function(k){ scenes[k].hidden = (k !== btn.dataset.scene); });
+  });
+});
+
+/* ===================================================================
+   SCENE 1: CLOUD OF WITNESSES
+=================================================================== */
+var DECEASED = [[1963,"Agnes Semia Gwanfogbe"],[1963,"Beatrice Animbom Monju"],[1963,"Camilla Nain  Tufoin"],[1963,"Edith Boma"],[1963,"Florence Lum Zamcho"],[1963,"Francisca Bongabi Nforba"],[1963,"Helen Ndofor"],[1963,"Johanna Kess"],[1963,"Mary Konsungko Forbi"],[1963,"Mary Ngudam Vega"],[1963,"Odilia Yaya Nkwa"],[1963,"Sr Angeline Fonyuy Ngeh"],[1963,"Teresa Nchami"],[1964,"Mary Mambo Tima"],[1964,"Philomena Neh"],[1965,"Anne Atanga"],[1965,"Bernadette Fri Njim"],[1965,"Bridget Nangah"],[1965,"Caroline Tanyi"],[1965,"Celine Banye Mengnjo"],[1965,"Elizabeth Bih Niba"],[1965,"Grace Fondjin"],[1965,"Helen Ndefru"],[1965,"Mary Mbango Eteky"],[1965,"Prudentia Stephen"],[1965,"Rachel Fawty"],[1965,"Rose Wangia"],[1965,"Veronica Tabue"],[1965,"Victoria Chindo"],[1966,"Anna Mofor"],[1966,"Christina Makene"],[1966,"Emmerentia Forbia"],[1966,"Grace Ndingsa"],[1966,"Julie Ngekwi"],[1966,"Maggie Anchang"],[1966,"Maggie Sonkwa"],[1966,"Maria Gorreti Nkuo"],[1966,"Mary Mayen"],[1966,"Mary Njinda"],[1966,"Rosa Fogam"],[1966,"Rose Bangu"],[1966,"Rose Bih Ndi"],[1966,"Roseline Sama"],[1966,"Susan Joffi Ngale"],[1967,"Anna Epo"],[1967,"Assumpta Tawang"],[1967,"Celia Monju"],[1967,"Celine Fulai"],[1967,"Elizabeth Tarh"],[1967,"Georgina Sona"],[1967,"Julia Awefor"],[1967,"Martha Fortung"],[1967,"Mary Olga Ngwa"],[1967,"Mathilda Besong"],[1967,"Mercy Oben"],[1967,"Susana Mbah"],[1968,"Catherine Ngange"],[1968,"Christie Usim"],[1968,"Elizabeth Nkuo"],[1968,"Hedwick Beck"],[1968,"Irene Njamfa"],[1968,"Mary Andela"],[1968,"Prudentia Awa"],[1968,"Rose Lum Fobi"],[1968,"Theresa Bih Ngwa"],[1968,"Theresa Yuh N"],[1969,"Christina Obi"],[1969,"Esther Tumenta"],[1969,"Irene Lum Nangah"],[1969,"Margaret Aweh"],[1969,"Patricia Chamber"],[1969,"Regina Kpu"],[1969,"Theresa Takor"],[1970,"Beatrice Buma"],[1970,"Beatrice Iyo Ngonga"],[1970,"Benedicta Ngu"],[1970,"Chi Rose Shuri"],[1970,"Elizabeth Suh Tandafor"],[1970,"Magaret Atanga"],[1970,"Ngu Vivian Ngu"],[1970,"Pauline Fuamenya"],[1970,"Sr Grace Ngu Ngefor"],[1970,"Therese Suh"],[1970,"Veronica Mkwenti Fokum"],[1971,"Agnes Atehgang"],[1971,"Elizabeth Ndi"],[1971,"Julie Mbwaye"],[1971,"Prudencia Chumbo"],[1972,"Ethel Binla"],[1972,"Justine Ghogomo"],[1972,"Maggie Fon"],[1972,"Mary Dororsi"],[1973,"Blandine"],[1973,"Dorothy Nforgham"],[1973,"Elizabeth Labule"],[1973,"Felicitas Munga"],[1973,"Gladys Diaga"],[1973,"Lucy Ndikum"],[1973,"Olga Ngala"],[1973,"Patricia Chilla"],[1973,"Regina Ngwa"],[1974,"Angeline Azeh"],[1974,"Bernadette Tantoh"],[1974,"Bridget Nchotu"],[1974,"Caroline Nkemka"],[1974,"Cecile Nche"],[1974,"Comfort Asobo"],[1974,"Emmerencia Fofuleng"],[1974,"Grace Oheri"],[1974,"Jacinta Mankefor"],[1974,"Lorraine Timungwa"],[1974,"Mariata Njangfa"],[1974,"Ruth Patcha"],[1975,"Elizabeth Chuba"],[1975,"Rita Tata"],[1976,"Apolonia Banseka"],[1976,"Azunishie Jacinta"],[1976,"Eunice Tantoh"],[1976,"Maria Goretti Kijem"],[1976,"Pjilo Mukalah"],[1976,"Rose Ngum"],[1976,"Vivian Atang"],[1977,"Anna Tantoh"],[1977,"Celestine Lawong"],[1977,"Josephine Fogakoh"],[1977,"Kate Ndelle"],[1977,"Maureen Ndanji Angum"],[1977,"Mildred Fomenky"],[1977,"Nsuh Celine Johny"],[1977,"Rita Tita"],[1977,"Vesoh Immaculate"],[1977,"Walburga Vando"],[1978,"Bridget Kusia Biyia"],[1978,"Bridget Ngwa"],[1978,"Emmerentia Adongabo"],[1978,"Florence Niba"],[1978,"Mercy Formukong"],[1978,"Roseline Forgham"],[1978,"Roseline Mbongere"],[1978,"Scholastica Awasum"],[1979,"Brenda Anyangwe"],[1979,"Ethelburga Ezia Ewi"],[1979,"Hilda Tanifor"],[1979,"Joan Kalu"],[1979,"Joan Tiku"],[1979,"Jovita Kume"],[1979,"Laeticia Chene"],[1979,"Mary Liliy Ngwe Kwende"],[1979,"Regina Cheo"],[1979,"Stella Dema"],[1980,"Bridget Forbiwe"],[1980,"Bridget Ngam"],[1980,"Genevieve Ngang"],[1980,"Henrietta Fonkem"],[1980,"Linda Ngalla"],[1980,"Prudencia Kilo"],[1980,"Theresa Anong"],[1980,"Valerie Timungwa"],[1981,"Bernadette Orji"],[1981,"Emelda Anang"],[1981,"Florence Bongyi"],[1981,"Florence Ngwang"],[1981,"Geraldine Ngwa"],[1981,"Gladys Forcha"],[1981,"Gwendoline Samson"],[1981,"Victorine Doh"],[1982,"Joyce Nde -Agah"],[1982,"Nicoline Simo"],[1982,"Pamela Akumchi"],[1982,"Pauline Lyonga"],[1983,"Elizabeth Njamsi"],[1983,"Emmaculate Ndonwi"],[1983,"Frida Tasi"],[1983,"Honorine Ngehnevu"],[1983,"Maura Fonge"],[1983,"Maureen Atungsiri"],[1983,"Pamela Nkeng"],[1983,"Perpetua Oyibo"],[1983,"Regina Feh"],[1983,"Rose Ngang"],[1983,"Vera Lum Suh"],[1984,"Appolonia Chuba"],[1984,"Ebenye Victorine"],[1984,"Immculate Kubri"],[1984,"Iyah Stella Tambe"],[1984,"Ngengong Azeh Immaculate"],[1984,"Ngwa  Germaine"],[1984,"Scholastica Ngang"],[1984,"Tabang Tita Florence"],[1985,"Caroline Ndiangang"],[1985,"Crescensia Yamah Nkwa"],[1985,"Forbi Nicoline Mankah"],[1985,"Isabelle Acha"],[1985,"Maurine Ngwa"],[1985,"Stella Ngafor"],[1986,"Akere Bell"],[1986,"Atanga Jacinta"],[1986,"Fri Evelyne Ndangoh"],[1986,"Gwendoline Che"],[1986,"Mbah Gilbertine Engonwei"],[1986,"Neh Elizabeth Ngang"],[1986,"Vivian Ndiangang"],[1987,"Judith Tarkang"],[1987,"Mungo Rene"],[1989,"Angu Brenda"],[1989,"Florence Ateh"],[1990,"Ambang Honorine"],[1990,"Delphine Ngeatoh"],[1990,"Edna Mor"],[1990,"Foy Marie Claire"],[1990,"Hannah Enjema"],[1990,"Judith Ndze"],[1990,"Kabi Geraldine"],[1990,"Sarah Bakane"],[1991,"Honorine Ngwashi"],[1991,"Barbara Lum Mfongeh"],[1991,"Njende Joy Wanji"],[1991,"Pechiambe Mirabel Nde"],[1992,"Joko Solange"],[1993,"Bih Gwendolyne"],[1993,"Bongo Basame"],[1993,"Delphine Bayere"],[1993,"Kpumbuh Dzerenyuy"],[1993,"Loh Mercy"],[1993,"Ndi Pierra"],[1998,"Bekene Emmanuella"],[1998,"Tangang Ngum Juliette"],[2000,"Forba Christine"],[2000,"Mbah Victorine"],[2000,"Ngeh Rita Nengi"],[2000,"Nina Ngassa"],[2001,"Mendy Liliana"],[2001,"Tche Ndah Marylene"],[2002,"Laisin Thelma Sikem"],[2002,"Mbuweh Priscilla"],[2002,"Singeh Helga Nji"],[2004,"Senge Hedrine"],[2006,"Ngu Sidth"],[2007,"Ngalla Dezerine"],[2007,"Tchakounang Diane"],[2007,"Tchounga Audrey"],[2009,"Mvogo Emmanuelle"]];
+
+var MEMORIES = [
+  "Pray for the repose of her soul.",
+  "Held in loving memory by her Lourdes sisters.",
+  "Remembered with gratitude and prayer.",
+  "May she rest in the peace of Christ.",
+  "Fondly remembered by her classmates.",
+  "Gone from our sight, never from our hearts."
+];
+
+function slugify(name, year){
+  return (year+'-'+name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+function decadeOf(y){ return Math.floor(y/10)*10; }
+
+var candleCounts = {};   // slug -> count, from db
+var customTributes = []; // array of {id,name,year,memory,by}
+var dbNs = null, userNs = null;
+var STORE_KEY = 'asd-state-v1';
+function loadLocal(){
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    var st = JSON.parse(raw);
+    if (st && st.candleCounts) candleCounts = st.candleCounts;
+    if (st && st.customTributes) customTributes = st.customTributes;
+  } catch(e){}
+}
+function saveLocal(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ candleCounts: candleCounts, customTributes: customTributes })); } catch(e){}
+}
+function standaloneLabels(){
+  var lbl = document.querySelector('.counter .lbl');
+  if (lbl) lbl.textContent = 'Candles You Lit';
+  var sum = document.querySelector('#custom-section summary span');
+  if (sum) sum.textContent = 'Added on This Device';
+}
+
+function totalCandles(){
+  var t = 0;
+  Object.keys(candleCounts).forEach(function(k){ t += candleCounts[k]||0; });
+  return t;
+}
+function renderCandleTotal(){
+  document.getElementById('candle-total').textContent = totalCandles();
+}
+
+function cardHTML(name, year, slug, memory, by){
+  var count = candleCounts[slug] || 0;
+  var lit = count > 0;
+  return '' +
+    '<div class="card" data-name="'+escapeHtml(name.toLowerCase())+'" data-year="'+year+'">' +
+      '<div class="name">'+escapeHtml(name)+'</div>' +
+      '<div class="yr">'+(year||'Remembered')+'</div>' +
+      '<p class="memory">'+escapeHtml(memory)+'</p>' +
+      (by ? '<div class="by">Added by '+escapeHtml(by)+'</div>' : '') +
+      '<div class="card-foot">' +
+        '<button class="candle-btn'+(lit?' lit':'')+'" data-slug="'+slug+'" aria-pressed="'+lit+'">' +
+          '<span class="flame" aria-hidden="true"></span><span class="lbl">'+(lit?'Lit':'Light a Candle')+'</span>' +
+        '</button>' +
+        '<span class="candle-count" data-count-for="'+slug+'">'+(count>0?count:'')+'</span>' +
+      '</div>' +
+    '</div>';
+}
+
+function buildDecades(){
+  var byDecade = {};
+  DECEASED.forEach(function(pair){
+    var y = pair[0], n = pair[1];
+    var d = decadeOf(y);
+    (byDecade[d] = byDecade[d] || []).push([y,n]);
+  });
+  var decadesEl = document.getElementById('decades');
+  var keys = Object.keys(byDecade).map(Number).sort(function(a,b){return a-b;});
+  var nowDecade = decadeOf(new Date().getFullYear());
+  var html = '';
+  keys.forEach(function(d){
+    var list = byDecade[d];
+    var memIdx = 0;
+    var cards = list.map(function(pair){
+      var y = pair[0], n = pair[1];
+      var slug = slugify(n,y);
+      var mem = MEMORIES[memIdx % MEMORIES.length]; memIdx++;
+      return cardHTML(n, y, slug, mem, null);
+    }).join('');
+    var openAttr = (d >= 1990) ? ' open' : '';
+    html += '<details class="decade"'+openAttr+' data-decade="'+d+'">' +
+      '<summary><span>'+d+'s</span><span class="count">'+list.length+' names</span></summary>' +
+      '<div class="card-grid">'+cards+'</div>' +
+    '</details>';
+  });
+  decadesEl.innerHTML = html;
+}
+
+function renderCustom(){
+  var section = document.getElementById('custom-section');
+  var grid = document.getElementById('custom-grid');
+  var countEl = document.getElementById('custom-count');
+  if (!customTributes.length){ section.hidden = true; return; }
+  section.hidden = false;
+  countEl.textContent = customTributes.length;
+  grid.innerHTML = customTributes.map(function(t){
+    return cardHTML(t.name, t.year, t.slug, t.memory || 'Remembered with love and prayer.', t.by);
+  }).join('');
+}
+
+function applySearch(){
+  var q = document.getElementById('search').value.trim().toLowerCase();
+  var anyVisible = false;
+  document.querySelectorAll('#decades .card, #custom-grid .card').forEach(function(card){
+    var match = !q || card.dataset.name.indexOf(q) !== -1 || String(card.dataset.year).indexOf(q) !== -1;
+    card.classList.toggle('hidden-by-search', !match);
+    if (match) anyVisible = true;
+  });
+  document.querySelectorAll('details.decade').forEach(function(det){
+    var visibleCards = det.querySelectorAll('.card:not(.hidden-by-search)').length;
+    if (q){ det.open = visibleCards > 0; det.hidden = visibleCards === 0; }
+    else { det.hidden = false; }
+  });
+  document.getElementById('no-results').hidden = anyVisible || !q;
+}
+document.getElementById('search').addEventListener('input', applySearch);
+
+/* candle lighting: delegate clicks */
+function spawnParticles(originEl){
+  var rect = originEl.getBoundingClientRect();
+  for (var i=0;i<6;i++){
+    var p = document.createElement('span');
+    p.className = 'particle';
+    p.style.left = (rect.left + rect.width/2) + 'px';
+    p.style.top = (rect.top + rect.height/2) + 'px';
+    p.style.setProperty('--dx', (Math.random()*40-20)+'px');
+    document.body.appendChild(p);
+    (function(el){ setTimeout(function(){ el.remove(); }, 950); })(p);
+  }
+}
+
+async function lightCandle(slug, btn){
+  candleCounts[slug] = (candleCounts[slug]||0) + 1;
+  document.querySelectorAll('[data-slug="'+slug+'"]').forEach(function(b){
+    b.classList.add('lit'); b.setAttribute('aria-pressed','true');
+    b.querySelector('.lbl').textContent = 'Lit';
+  });
+  document.querySelectorAll('[data-count-for="'+slug+'"]').forEach(function(c){
+    c.textContent = candleCounts[slug];
+  });
+  renderCandleTotal();
+  spawnParticles(btn);
+  if (!dbNs) saveLocal();
+  if (dbNs){
+    try {
+      var doc = dbNs.doc('candles/'+slug);
+      var cur = await doc.get();
+      var next = ((cur && cur.count) || 0) + 1;
+      await doc.set({ count: next, slug: slug });
+    } catch(e){ /* best effort; local UI already updated */ }
+  }
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.candle-btn');
+  if (btn) lightCandle(btn.dataset.slug, btn);
+});
+
+/* ---- Add to Cloud modal ---- */
+var backdrop = document.getElementById('modal-backdrop');
+document.getElementById('open-add').addEventListener('click', function(){
+  backdrop.hidden = false;
+  document.getElementById('f-name').focus();
+});
+document.getElementById('close-modal').addEventListener('click', closeModal);
+backdrop.addEventListener('click', function(e){ if (e.target === backdrop) closeModal(); });
+function closeModal(){
+  backdrop.hidden = true;
+  document.getElementById('add-form').reset();
+  document.getElementById('form-msg').textContent = '';
+}
+
+document.getElementById('add-form').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var name = document.getElementById('f-name').value.trim();
+  var year = document.getElementById('f-year').value.trim();
+  var memory = document.getElementById('f-memory').value.trim();
+  var by = document.getElementById('f-by').value.trim();
+  if (!name || !by) return;
+
+  var existingNames = DECEASED.map(function(p){return p[1].toLowerCase();})
+    .concat(customTributes.map(function(t){return t.name.toLowerCase();}));
+  if (existingNames.indexOf(name.toLowerCase()) !== -1){
+    document.getElementById('form-msg').textContent = name+' is already on the wall.';
+    document.getElementById('form-msg').style.color = 'var(--wrong)';
+    return;
+  }
+
+  var submitBtn = document.getElementById('submit-add');
+  submitBtn.disabled = true;
+  var slug = slugify(name, year || 'recent') + '-' + Date.now().toString(36);
+  var entry = { id: slug, slug: slug, name: name, year: year || null, memory: memory, by: by, createdAt: Date.now() };
+
+  if (dbNs){
+    try { await dbNs.doc('customTributes/'+slug).set(entry); }
+    catch(err){ /* fall through to local-only add */ }
+  }
+  customTributes.unshift(entry);
+  if (!dbNs) saveLocal();
+  renderCustom();
+  applySearch();
+  submitBtn.disabled = false;
+  document.getElementById('form-msg').style.color = 'var(--correct)';
+  document.getElementById('form-msg').textContent = name+' has been added to the cloud.';
+  setTimeout(closeModal, 1100);
+});
+
+buildDecades();
+renderCandleTotal();
+
+/* ---- load db state (candles + custom tributes), best effort ---- */
+async function initDb(){
+  if (window.claude && window.claude.use) {
+    try {
+      dbNs = await window.claude.use('db');
+      userNs = await window.claude.use('user');
+    } catch(e){ dbNs = null; }
+  }
+  if (!dbNs) {
+    standaloneLabels();
+    loadLocal();
+    buildDecades(); renderCustom(); renderCandleTotal(); applySearch();
+    return;
+  }
+  try {
+    var candleDocs = await dbNs.collection('candles').get();
+    (candleDocs.docs || candleDocs || []).forEach(function(d){
+      var data = d.data ? d.data() : d;
+      if (data && data.slug) candleCounts[data.slug] = data.count || 0;
+    });
+  } catch(e){}
+  try {
+    var customDocs = await dbNs.collection('customTributes').get();
+    var items = (customDocs.docs || customDocs || []).map(function(d){ return d.data ? d.data() : d; });
+    items.sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+    customTributes = items;
+  } catch(e){}
+  // re-render with loaded counts
+  buildDecades();
+  renderCustom();
+  renderCandleTotal();
+  applySearch();
+}
+initDb();
+
+/* ===================================================================
+   SCENE 2: SACRED TRIVIA
+=================================================================== */
+var QUESTIONS = [
+  { q: "What feast does the Catholic Church celebrate on November 1st?", opts: ["All Saints' Day","All Souls' Day","Feast of Christ the King","The Assumption"], correct: 0,
+    explain: "All Saints' Day honors every saint in heaven, known and unknown — not only those with a feast day of their own." },
+  { q: "What feast follows immediately after, on November 2nd?", opts: ["The Immaculate Conception","All Souls' Day","Feast of All Martyrs","Candlemas"], correct: 1,
+    explain: "All Souls' Day, the Commemoration of All the Faithful Departed, is devoted to prayer for souls being purified before entering heaven." },
+  { q: "St. Thérèse of Lisieux is popularly known by what nickname?", opts: ["The Desert Mother","The Weeping Saint","The Little Flower","The Beggar Saint"], correct: 2,
+    explain: "She called her spirituality the “Little Way” — small acts of love done with great faithfulness — and is also patroness of missions." },
+  { q: "St. Martin de Porres, born in Lima, Peru, is especially invoked as patron of which cause?", opts: ["Sailors and navigators","Those seeking racial harmony and public health workers","Travelers","Musicians"], correct: 1,
+    explain: "Son of a Spanish nobleman and a freed African woman, he is honored as a patron of racial harmony, barbers, and public health workers." },
+  { q: "The Catholic practice of praying for the dead in November reflects belief in which doctrine?", opts: ["Limbo","Predestination","Purgatory","The Rapture"], correct: 2,
+    explain: "Purgatory is understood as a final purification for those who die in God's friendship but are not yet fully ready for the joy of heaven." },
+  { q: "What liturgical color is traditionally worn for All Souls' Day Masses?", opts: ["Red","Green","Gold","Violet or black"], correct: 3,
+    explain: "Violet (penitential) or black (mourning) are the traditional choices, though white is also permitted in some places today." },
+  { q: "The word “Halloween” comes from which older phrase?", opts: ["\"All Hallows' Eve\"","\"Harvest Evening\"","\"Holy Even\"","\"Night of Souls\""], correct: 0,
+    explain: "“Hallow” is an old word for “saint,” so All Hallows' Eve is simply the evening before All Saints' Day." },
+  { q: "Which saint is traditionally invoked for “lost causes”?", opts: ["St. Jude Thaddeus","St. Anthony of Padua","St. Christopher","St. Monica"], correct: 0,
+    explain: "St. Jude, one of the Twelve Apostles, became known as the patron of desperate and seemingly hopeless situations." },
+  { q: "November is traditionally dedicated in the Church to the remembrance of…", opts: ["The Sacred Heart","The Holy Souls in Purgatory","The Immaculate Conception","The Precious Blood"], correct: 1,
+    explain: "Alongside its own feasts, the whole month carries a tradition of praying and offering Mass for the Holy Souls." },
+  { q: "What is a “plenary indulgence,” often sought through prayer and a cemetery visit in early November?", opts: ["A full remission of temporal punishment due to sin","A relic blessing","A decree of canonization","A papal dispensation from fasting"], correct: 0,
+    explain: "Under the Church's usual conditions, it is a complete remission of the temporal punishment still owed for sins already forgiven." }
+];
+
+var qIndex = 0, score = 0, answered = false;
+
+function renderQuestion(){
+  var item = QUESTIONS[qIndex];
+  document.getElementById('q-progress').textContent = 'Question '+(qIndex+1)+' of '+QUESTIONS.length;
+  document.getElementById('q-score').textContent = 'Score: '+score;
+  document.getElementById('progress-fill').style.width = (((qIndex)/QUESTIONS.length)*100)+'%';
+  document.getElementById('q-text').textContent = item.q;
+  document.getElementById('q-explain').hidden = true;
+  document.getElementById('q-next').disabled = true;
+  answered = false;
+
+  var optsEl = document.getElementById('q-opts');
+  optsEl.innerHTML = '';
+  item.opts.forEach(function(opt, i){
+    var b = document.createElement('button');
+    b.className = 'opt';
+    b.type = 'button';
+    b.textContent = opt;
+    b.addEventListener('click', function(){ selectOption(i, b); });
+    optsEl.appendChild(b);
+  });
+}
+
+function selectOption(i, btnEl){
+  if (answered) return;
+  answered = true;
+  var item = QUESTIONS[qIndex];
+  var opts = document.querySelectorAll('#q-opts .opt');
+  opts.forEach(function(b, idx){
+    b.disabled = true;
+    if (idx === item.correct) b.classList.add('correct');
+    else if (idx === i) b.classList.add('wrong');
+  });
+  if (i === item.correct) score++;
+  document.getElementById('q-score').textContent = 'Score: '+score;
+  var ex = document.getElementById('q-explain');
+  ex.textContent = item.explain;
+  ex.hidden = false;
+  document.getElementById('q-next').disabled = false;
+}
+
+document.getElementById('q-next').addEventListener('click', function(){
+  qIndex++;
+  if (qIndex >= QUESTIONS.length){ showFinal(); return; }
+  renderQuestion();
+});
+
+function showFinal(){
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('quiz-active').hidden = true;
+  document.getElementById('quiz-final').hidden = false;
+  document.getElementById('final-score').textContent = score+' / '+QUESTIONS.length;
+  var msg;
+  if (score === QUESTIONS.length) msg = "A perfect score! You know the Communion of Saints well.";
+  else if (score >= QUESTIONS.length*0.7) msg = "Well done — a strong showing of faith and knowledge.";
+  else if (score >= QUESTIONS.length*0.4) msg = "A good effort. Every answer is a chance to learn more about the saints.";
+  else msg = "Thanks for playing — November is a good month to learn more about the Holy Souls.";
+  document.getElementById('final-msg').textContent = msg;
+}
+
+document.getElementById('q-restart').addEventListener('click', function(){
+  qIndex = 0; score = 0;
+  document.getElementById('quiz-active').hidden = false;
+  document.getElementById('quiz-final').hidden = true;
+  renderQuestion();
+});
+
+renderQuestion();
+
+/* ===================================================================
+   SCENE 3: LIGHT IN THE DARKNESS
+=================================================================== */
+var altarCandle = document.getElementById('altar-candle');
+var altarLabel = document.getElementById('altar-label');
+var stepEls = document.querySelectorAll('.step');
+var continueBtn = document.getElementById('step-continue');
+var currentStep = 0;
+var ignited = false;
+
+function showStep(n){
+  stepEls.forEach(function(el){
+    el.classList.toggle('visible', Number(el.dataset.step) <= n);
+  });
+  continueBtn.hidden = (n >= stepEls.length);
+  continueBtn.textContent = (n === stepEls.length - 1) ? 'Reveal Closing Blessing' : 'Continue';
+}
+
+altarCandle.addEventListener('click', function(){
+  if (ignited) return;
+  ignited = true;
+  altarCandle.classList.add('ignited');
+  altarCandle.setAttribute('aria-pressed','true');
+  altarLabel.textContent = 'Candle Lit — A Moment of Reflection';
+  currentStep = 1;
+  showStep(currentStep);
+});
+
+continueBtn.addEventListener('click', function(){
+  if (!ignited) return;
+  currentStep = Math.min(currentStep + 1, stepEls.length);
+  showStep(currentStep);
+});
+
+/* private intention: local-only convenience, never sent anywhere */
+try {
+  var saved = localStorage.getItem('asd-intention');
+  if (saved) document.getElementById('intention').value = saved;
+} catch(e){}
+document.getElementById('intention').addEventListener('input', function(e){
+  try { localStorage.setItem('asd-intention', e.target.value); } catch(err){}
+});
+
+})();
+</script>
+</body>
+</html>
