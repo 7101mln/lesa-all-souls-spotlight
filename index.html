@@ -277,6 +277,7 @@ textarea{min-height:72px;resize:vertical}
 .banner .verse,.banner .verse cite,details.decade summary,.quiz-card,.chapel,nav.tabs button,input::placeholder{text-shadow:0 1px 3px rgba(0,25,80,.75)}
 nav.tabs button[aria-selected="true"]{text-shadow:none}
 .card{text-shadow:none}
+.empty-note{grid-column:1/-1;margin:0;padding:.3rem 0 .6rem;color:var(--ink-muted);font-style:italic;font-size:.85rem;text-align:center}
 footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;padding:1.5rem 0 2.5rem}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
@@ -325,6 +326,14 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
         <label for="search" class="sr-only">Search names or years</label>
         <input type="search" id="search" placeholder="Search a name or a year&hellip;" autocomplete="off">
       </div>
+      <button class="btn" id="open-add">+ Add to Cloud</button>
+    </div>
+
+    <div id="custom-section">
+      <details class="decade" open>
+        <summary><span>Newly Honored Witnesses</span><span class="count" id="custom-count">0</span></summary>
+        <div class="card-grid" id="custom-grid"></div>
+      </details>
     </div>
 
     <div id="decades"></div>
@@ -401,6 +410,37 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
 
 <footer class="app-foot">LESA &mdash; Lourdes Ex-Students Association &middot; All Souls&rsquo; Day 2025</footer>
 
+<!-- ===================== ADD TO CLOUD MODAL ===================== -->
+<div class="modal-backdrop" id="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Add to the Cloud</h2>
+    <p class="hint">Add a loved one or mentor to the memory wall.</p>
+    <form id="add-form">
+      <div class="field">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" required maxlength="80">
+      </div>
+      <div class="field">
+        <label for="f-year">Year (optional)</label>
+        <input type="text" id="f-year" maxlength="9" placeholder="e.g. 1995">
+      </div>
+      <div class="field">
+        <label for="f-memory">A short memory or prayer</label>
+        <textarea id="f-memory" maxlength="240" placeholder="What you'd like the community to remember&hellip;"></textarea>
+      </div>
+      <div class="field">
+        <label for="f-by">Your name</label>
+        <input type="text" id="f-by" required maxlength="60">
+      </div>
+      <p class="form-msg" id="form-msg" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost small" id="close-modal">Cancel</button>
+        <button type="submit" class="btn" id="submit-add">Add Candle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 (function(){
 "use strict";
@@ -461,17 +501,15 @@ function loadLocal(){
     if (!raw) return;
     var st = JSON.parse(raw);
     if (st && st.candleCounts) candleCounts = st.candleCounts;
-    if (st && st.customTributes){ delete st.customTributes; localStorage.setItem(STORE_KEY, JSON.stringify(st)); }
+    if (st && st.customTributes) customTributes = st.customTributes;
   } catch(e){}
 }
 function saveLocal(){
-  try { localStorage.setItem(STORE_KEY, JSON.stringify({ candleCounts: candleCounts })); } catch(e){}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ candleCounts: candleCounts, customTributes: customTributes })); } catch(e){}
 }
 function standaloneLabels(){
   var lbl = document.querySelector('.counter .lbl');
   if (lbl) lbl.textContent = 'Candles You Lit';
-  var sum = document.querySelector('#custom-section summary span');
-  if (sum) sum.textContent = 'Added on This Device';
 }
 
 function totalCandles(){
@@ -533,15 +571,20 @@ function buildDecades(){
 }
 
 function renderCustom(){
-  var section = document.getElementById('custom-section'); if (!section) return;
+  var section = document.getElementById('custom-section');
   var grid = document.getElementById('custom-grid');
   var countEl = document.getElementById('custom-count');
-  if (!customTributes.length){ section.hidden = true; return; }
-  section.hidden = false;
-  countEl.textContent = customTributes.length;
-  grid.innerHTML = customTributes.map(function(t){
-    return cardHTML(t.name, t.year, t.slug, t.memory || 'Remembered with love and prayer.', t.by);
-  }).join('');
+  if (!section) return;
+  countEl.textContent = customTributes.length + (customTributes.length === 1 ? ' name' : ' names');
+  if (!customTributes.length){
+    grid.innerHTML = '<p class="empty-note">Names added with &ldquo;+ Add to Cloud&rdquo; will appear here.</p>';
+  } else {
+    grid.innerHTML = customTributes.map(function(t){
+      return cardHTML(t.name, t.year, t.slug, t.memory || 'Remembered with love and prayer.', t.by);
+    }).join('');
+  }
+  var nt = document.getElementById('names-total');
+  if (nt) nt.textContent = DECEASED.length + customTributes.length;
 }
 
 function applySearch(){
@@ -599,6 +642,55 @@ async function lightCandle(slug, btn){
 document.addEventListener('click', function(e){
   var btn = e.target.closest('.candle-btn');
   if (btn) lightCandle(btn.dataset.slug, btn);
+});
+
+/* ---- Add to Cloud modal ---- */
+var backdrop = document.getElementById('modal-backdrop');
+document.getElementById('open-add').addEventListener('click', function(){
+  backdrop.hidden = false;
+  document.getElementById('f-name').focus();
+});
+document.getElementById('close-modal').addEventListener('click', closeModal);
+backdrop.addEventListener('click', function(e){ if (e.target === backdrop) closeModal(); });
+function closeModal(){
+  backdrop.hidden = true;
+  document.getElementById('add-form').reset();
+  document.getElementById('form-msg').textContent = '';
+}
+
+document.getElementById('add-form').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var name = document.getElementById('f-name').value.trim();
+  var year = document.getElementById('f-year').value.trim();
+  var memory = document.getElementById('f-memory').value.trim();
+  var by = document.getElementById('f-by').value.trim();
+  if (!name || !by) return;
+
+  var existingNames = DECEASED.map(function(p){return p[1].toLowerCase();})
+    .concat(customTributes.map(function(t){return t.name.toLowerCase();}));
+  if (existingNames.indexOf(name.toLowerCase()) !== -1){
+    document.getElementById('form-msg').textContent = name+' is already on the wall.';
+    document.getElementById('form-msg').style.color = 'var(--wrong)';
+    return;
+  }
+
+  var submitBtn = document.getElementById('submit-add');
+  submitBtn.disabled = true;
+  var slug = slugify(name, year || 'recent') + '-' + Date.now().toString(36);
+  var entry = { id: slug, slug: slug, name: name, year: year || null, memory: memory, by: by, createdAt: Date.now() };
+
+  if (dbNs){
+    try { await dbNs.doc('customTributes/'+slug).set(entry); }
+    catch(err){ /* fall through to local-only add */ }
+  }
+  customTributes.unshift(entry);
+  if (!dbNs) saveLocal();
+  renderCustom();
+  applySearch();
+  submitBtn.disabled = false;
+  document.getElementById('form-msg').style.color = 'var(--correct)';
+  document.getElementById('form-msg').textContent = name+' has been added to the cloud.';
+  setTimeout(closeModal, 1100);
 });
 
 buildDecades();
