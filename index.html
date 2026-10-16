@@ -250,6 +250,28 @@ textarea{min-height:72px;resize:vertical}
 .step .priv-note{font-size:.72rem;color:var(--ink-faint);margin-top:.4rem}
 .chapel-actions{text-align:center;margin-top:1.3rem;position:relative;z-index:1}
 
+/* ---------- cloud-shaped name cards ---------- */
+.card-grid{gap:1.5rem .9rem;padding:1.3rem 1rem 1.2rem}
+.card{
+  position:relative;background:#f6f0fc;border:none;color:#3a0a3a;
+  border-radius:46px 52px 44px 50px / 40px 44px 42px 46px;
+  padding:1.15rem 1.35rem 1rem;margin-top:12px;
+  filter:drop-shadow(0 6px 8px rgba(40,0,40,.35));
+}
+.card::before,.card::after{
+  content:"";position:absolute;background:#f6f0fc;border-radius:50%;z-index:0;pointer-events:none;
+}
+.card::before{width:44%;height:46px;top:-17px;left:14%;border-radius:50% 50% 40% 40% / 90% 90% 30% 30%}
+.card::after{width:34%;height:38px;top:-12px;right:12%;border-radius:50% 50% 40% 40% / 90% 90% 30% 30%}
+.card>*{position:relative;z-index:1}
+.card .name{color:#3a0a3a}
+.card .yr{color:#6d4a78}
+.card .memory{color:#4f3a66}
+.card .by{color:#7a5c0a}
+.card .candle-btn{background:#800080;border-color:var(--gold);color:#f6e9f6}
+.card .candle-count{color:#6d2d6d;font-weight:600}
+.card-foot{padding-bottom:.1rem}
+
 footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;padding:1.5rem 0 2.5rem}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
