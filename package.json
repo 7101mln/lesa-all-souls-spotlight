@@ -1,0 +1,6 @@
+{
+  "name": "lesa-all-souls-spotlight",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@netlify/blobs": "^11.1.4" }
+}

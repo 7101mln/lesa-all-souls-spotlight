@@ -317,7 +317,7 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
     <div class="counter-row">
       <div class="counter">
         <span class="num" id="candle-total">&mdash;</span>
-        <span class="lbl">Candles Lit</span>
+        <span class="lbl">Total Cumulative Candles Lit</span>
       </div>
       <div class="counter">
         <span class="num" id="names-total">244</span>
@@ -504,16 +504,33 @@ function loadLocal(){
     var raw = localStorage.getItem(STORE_KEY);
     if (!raw) return;
     var st = JSON.parse(raw);
-    if (st && st.candleCounts) candleCounts = st.candleCounts;
     if (st && st.customTributes) customTributes = st.customTributes;
   } catch(e){}
 }
 function saveLocal(){
-  try { localStorage.setItem(STORE_KEY, JSON.stringify({ candleCounts: candleCounts, customTributes: customTributes })); } catch(e){}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ customTributes: customTributes })); } catch(e){}
 }
-function standaloneLabels(){
-  var lbl = document.querySelector('.counter .lbl');
-  if (lbl) lbl.textContent = 'Candles You Lit';
+async function fetchSharedCounts(){
+  try {
+    var r = await fetch('/api/candles', { cache: 'no-store' });
+    if (!r.ok) return;
+    var d = await r.json();
+    if (d && d.counts) candleCounts = d.counts;
+  } catch(e){}
+}
+function postCandle(slug){
+  try {
+    fetch('/api/candles', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({slug:slug}) })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d || !d.counts) return;
+        candleCounts = d.counts;
+        Object.keys(candleCounts).forEach(function(k){
+          document.querySelectorAll('[data-count-for="'+k+'"]').forEach(function(c){ c.textContent = candleCounts[k]; });
+        });
+        renderCandleTotal();
+      }).catch(function(){});
+  } catch(e){}
 }
 
 function totalCandles(){
@@ -538,7 +555,7 @@ function cardHTML(name, year, slug, memory, by){
         '<button class="candle-btn'+(lit?' lit':'')+'" data-slug="'+slug+'" aria-pressed="'+lit+'" aria-label="Light a candle for '+escapeHtml(name)+'" title="Light a candle">' +
           '<span class="flame" aria-hidden="true"><svg viewBox="0 0 14 28" aria-hidden="true" focusable="false"><path class="fl" d="M7 0.5 C9.6 4 10.4 6.2 10.4 8 C10.4 10 8.9 11.3 7 11.3 C5.1 11.3 3.6 10 3.6 8 C3.6 6.2 4.4 4 7 0.5 Z"/><line class="wick" x1="7" y1="11.3" x2="7" y2="13.6"/><rect class="wax" x="3" y="13.6" width="8" height="13.6" rx="1.4"/></svg></span><span class="lbl">Light a Candle</span>' +
         '</button>' +
-        '<span class="candle-count" data-count-for="'+slug+'">'+(count>0?count:'')+'</span>' +
+        '<span class="candle-count" data-count-for="'+slug+'">'+count+'</span>' +
       '</div>' +
     '</div>';
 }
@@ -632,7 +649,7 @@ async function lightCandle(slug, btn){
   });
   renderCandleTotal();
   spawnParticles(btn);
-  if (!dbNs) saveLocal();
+  if (!dbNs) postCandle(slug);
   if (dbNs){
     try {
       var doc = dbNs.doc('candles/'+slug);
@@ -709,8 +726,8 @@ async function initDb(){
     } catch(e){ dbNs = null; }
   }
   if (!dbNs) {
-    standaloneLabels();
     loadLocal();
+    await fetchSharedCounts();
     buildDecades(); renderCustom(); renderCandleTotal(); applySearch();
     return;
   }
