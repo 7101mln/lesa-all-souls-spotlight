@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="An interactive All Souls' Day spotlight for LESA: a Cloud of Witnesses memory wall, All Saints trivia, and a guided candlelight reflection.">
+<meta name="description" content="An interactive All Souls' Day spotlight for LESA USA: a Cloud of Witnesses memory wall, All Saints trivia, and a guided candlelight reflection.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>All Souls Day Spotlight</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -278,6 +278,10 @@ textarea{min-height:72px;resize:vertical}
 nav.tabs button[aria-selected="true"]{text-shadow:none}
 .card{text-shadow:none}
 .empty-note{grid-column:1/-1;margin:0;padding:.3rem 0 .6rem;color:var(--ink-muted);font-style:italic;font-size:.85rem;text-align:center}
+/* all three tabs share the gold look of the "Cloud of Witnesses" tab */
+nav.tabs button,nav.tabs button[aria-selected="true"]{background:var(--gold);color:#120d1c;border-color:var(--gold);font-weight:600;text-shadow:none}
+nav.tabs button:hover{background:var(--gold-soft)}
+nav.tabs button[aria-selected="true"]{box-shadow:0 0 0 2px #fff,0 0 0 4px #800080}
 footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;padding:1.5rem 0 2.5rem}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
@@ -288,7 +292,7 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
 
 <header class="top">
   <div class="container">
-    <p class="eyebrow">LESA &middot; All Souls&rsquo; Day 2025</p>
+    <p class="eyebrow">LESA USA &middot; All Souls&rsquo; Day 2026</p>
     <h1 class="title">November Faith Spotlight</h1>
     <p class="subtitle">Unity &middot; Love &middot; Service</p>
     <nav class="tabs" role="tablist" aria-label="Spotlight sections">
@@ -408,7 +412,7 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
 
 </main>
 
-<footer class="app-foot">LESA &mdash; Lourdes Ex-Students Association &middot; All Souls&rsquo; Day 2025</footer>
+<footer class="app-foot">LESA USA &mdash; Lourdes Ex-Students Association &middot; All Souls&rsquo; Day 2026</footer>
 
 <!-- ===================== ADD TO CLOUD MODAL ===================== -->
 <div class="modal-backdrop" id="modal-backdrop" hidden>
