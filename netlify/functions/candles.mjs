@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 
-const KEY = "totals";
+const KEY = "totals-reset-2026-11-02";
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const MAX_KEYS = 3000;
 const json = (obj, status = 200) =>
