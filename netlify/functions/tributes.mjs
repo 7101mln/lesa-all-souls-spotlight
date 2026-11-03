@@ -23,6 +23,12 @@ const OVERRIDES = {
     memory: "A beloved daughter of Lourdes, remembered with gratitude and love.",
   },
 };
+// Entries restored by an admin. Slugs match the candle counter keys so existing candle counts stay attached.
+const SEED = [
+  { slug: "recent-catherine-jing-mvzoturj", name: "Catherine Jing", year: "1974", memory: "Remembered with love; may she rest in the peace of Christ.", by: "Ayang Jumbam", createdAt: 1793700003000 },
+  { slug: "1969-ros-gwanbula-mvzozqd4", name: "Ros Gwanbula", year: "1969", memory: "May her gentle soul rest in eternal peace.", by: "Ayang Jumbam", createdAt: 1793700002000 },
+  { slug: "recent-mommy-hostensia-mvzypqyx", name: "Mommy Hortensia", year: null, memory: "A mother in faith; may the Lord grant her eternal rest.", by: "Ayang Jumbam", createdAt: 1793700001000 },
+].map((e) => ({ ...e, id: e.slug }));
 const fix = (list) => {
   const out = [];
   const seen = new Set();
@@ -32,6 +38,9 @@ const fix = (list) => {
     if (seen.has(e.slug)) continue;
     seen.add(e.slug);
     out.push(e);
+  }
+  for (const e of SEED) {
+    if (!seen.has(e.slug)) { seen.add(e.slug); out.unshift(e); }
   }
   return out;
 };
