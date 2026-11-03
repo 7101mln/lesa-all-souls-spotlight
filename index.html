@@ -518,6 +518,34 @@ async function fetchSharedCounts(){
     if (d && d.counts) candleCounts = d.counts;
   } catch(e){}
 }
+function sortTributes(){ customTributes.sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); }); }
+async function postTribute(entry){
+  try {
+    var r = await fetch('/api/tributes', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(entry) });
+    if (!r.ok) return null;
+    var d = await r.json();
+    return d && d.tributes ? d.tributes : null;
+  } catch(e){ return null; }
+}
+async function syncTributes(){
+  // Pull the shared list; push any names that exist only on this device, then keep the merged list.
+  var shared = null;
+  try {
+    var r = await fetch('/api/tributes', { cache:'no-store' });
+    if (r.ok) { var d = await r.json(); if (d && d.tributes) shared = d.tributes; }
+  } catch(e){}
+  if (!shared) return;
+  var have = {};
+  shared.forEach(function(t){ have[t.slug] = 1; have[(t.name||'').toLowerCase()] = 1; });
+  var pending = customTributes.filter(function(t){ return !have[t.slug] && !have[(t.name||'').toLowerCase()]; });
+  for (var i=0;i<pending.length;i++){
+    var res = await postTribute(pending[i]);
+    if (res) shared = res;
+  }
+  customTributes = shared.slice();
+  sortTributes();
+  saveLocal();
+}
 function postCandle(slug){
   try {
     fetch('/api/candles', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({slug:slug}) })
@@ -705,7 +733,11 @@ document.getElementById('add-form').addEventListener('submit', async function(e)
     catch(err){ /* fall through to local-only add */ }
   }
   customTributes.unshift(entry);
-  if (!dbNs) saveLocal();
+  if (!dbNs) {
+    saveLocal();
+    var shared = await postTribute(entry);
+    if (shared) { customTributes = shared.slice(); sortTributes(); saveLocal(); }
+  }
   renderCustom();
   applySearch();
   submitBtn.disabled = false;
@@ -728,6 +760,7 @@ async function initDb(){
   if (!dbNs) {
     loadLocal();
     await fetchSharedCounts();
+    await syncTributes();
     buildDecades(); renderCustom(); renderCandleTotal(); applySearch();
     return;
   }
