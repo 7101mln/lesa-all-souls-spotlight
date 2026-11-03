@@ -9,6 +9,29 @@ const json = (obj, status = 200) =>
     status,
     headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
+// Curated corrections, applied by slug on every read/write (keeps the original createdAt and order).
+const OVERRIDES = {
+  "1900-jane-doe-mvzzy1rx": {
+    slug: "1963-canisia-bongfen-miye-mvzzohz3",
+    id: "1963-canisia-bongfen-miye-mvzzohz3",
+    name: "Canisia Bongfen Miye",
+    year: "1963",
+    memory: "A beloved daughter of Lourdes, remembered with gratitude and love. Eternal rest grant unto her, O Lord, and let perpetual light shine upon her.",
+    by: "Ayang Jumbam",
+  },
+};
+const fix = (list) => {
+  const out = [];
+  const seen = new Set();
+  for (const t of list) {
+    const o = OVERRIDES[t.slug];
+    const e = o ? { ...t, ...o } : t;
+    if (seen.has(e.slug)) continue;
+    seen.add(e.slug);
+    out.push(e);
+  }
+  return out;
+};
 const clip = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
 export default async (req) => {
@@ -16,7 +39,7 @@ export default async (req) => {
 
   if (req.method === "GET") {
     const data = (await store.get(KEY, { type: "json" })) || { tributes: [] };
-    return json(data);
+    return json({ tributes: fix(data.tributes) });
   }
 
   if (req.method === "POST") {
@@ -36,6 +59,8 @@ export default async (req) => {
     for (let attempt = 0; attempt < 8; attempt++) {
       const cur = await store.getWithMetadata(KEY, { type: "json" });
       const data = cur ? cur.data : { tributes: [] };
+      data.tributes = fix(data.tributes);
+      if (OVERRIDES[entry.slug]) return json(data); // superseded entry: ignore stale re-uploads
       const dup = data.tributes.some(
         (t) => t.slug === entry.slug || t.name.toLowerCase() === entry.name.toLowerCase()
       );
