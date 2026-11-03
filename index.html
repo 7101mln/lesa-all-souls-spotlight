@@ -487,6 +487,8 @@ var MEMORIES = [
   "Gone from our sight, never from our hearts."
 ];
 
+// Display-name corrections. The key is the ORIGINAL slug, kept so the candle counters stay attached.
+var DISPLAY_NAME = { "1982-joyce-nde-agah": "Joyce Nde-Agah Monie" };
 function slugify(name, year){
   return (year+'-'+name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 }
@@ -608,7 +610,7 @@ function buildDecades(){
       var mem;
       if (MEMORY_OVERRIDE[n]) { mem = MEMORY_OVERRIDE[n]; }
       else { mem = MEMORIES[memIdx % MEMORIES.length]; memIdx++; }
-      return cardHTML(n, y, slug, mem, null);
+      return cardHTML(DISPLAY_NAME[slug] || n, y, slug, mem, null);
     }).join('');
     var openAttr = (d >= 1990) ? ' open' : '';
     html += '<details class="decade"'+openAttr+' data-decade="'+d+'">' +
@@ -715,7 +717,7 @@ document.getElementById('add-form').addEventListener('submit', async function(e)
   var by = document.getElementById('f-by').value.trim();
   if (!name || !by) return;
 
-  var existingNames = DECEASED.map(function(p){return p[1].toLowerCase();})
+  var existingNames = DECEASED.map(function(p){return (DISPLAY_NAME[slugify(p[1],p[0])] || p[1]).toLowerCase();})
     .concat(customTributes.map(function(t){return t.name.toLowerCase();}));
   if (existingNames.indexOf(name.toLowerCase()) !== -1){
     document.getElementById('form-msg').textContent = name+' is already on the wall.';
