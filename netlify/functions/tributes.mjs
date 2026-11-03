@@ -16,8 +16,11 @@ const OVERRIDES = {
     id: "1963-canisia-bongfen-miye-mvzzohz3",
     name: "Canisia Bongfen Miye",
     year: "1963",
-    memory: "A beloved daughter of Lourdes, remembered with gratitude and love. Eternal rest grant unto her, O Lord, and let perpetual light shine upon her.",
+    memory: "A beloved daughter of Lourdes, remembered with gratitude and love.",
     by: "Ayang Jumbam",
+  },
+  "1963-canisia-bongfen-miye-mvzzohz3": {
+    memory: "A beloved daughter of Lourdes, remembered with gratitude and love.",
   },
 };
 const fix = (list) => {
