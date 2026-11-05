@@ -115,8 +115,14 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 }
 .btn:hover{background:var(--gold-soft)}
 .btn:active{transform:scale(.97)}
-.all-row{display:flex;justify-content:center;margin:-.2rem 0 1.1rem}
-#light-all{font-size:1rem;padding:.7rem 1.6rem}
+.all-group{display:flex;align-items:center;gap:.5rem}
+.all-arrow{flex:none}
+.all-wrap{position:relative;display:inline-block}
+#light-all{background:#fffff0;color:#4a1560;border:2px solid var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.95rem;line-height:1.25;padding:.55rem 1.2rem;display:flex;flex-direction:column;align-items:center}
+#light-all:hover{background:#fff8dc}
+.all-tip{position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);width:min(300px,80vw);background:#4a1560;color:#fffff0;font-size:.85rem;line-height:1.45;padding:.8rem .95rem;border-radius:10px;border:1px solid var(--gold);box-shadow:0 8px 22px rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:opacity .18s;z-index:30;pointer-events:none;text-align:left;font-weight:400;text-transform:none;letter-spacing:0}
+.all-wrap:hover .all-tip,.all-wrap:focus-within .all-tip{opacity:1;visibility:visible}
+@media (max-width:700px){.all-group{flex-basis:100%;flex-direction:column;justify-content:center}.all-arrow{transform:rotate(90deg);margin:.1rem 0}}
 .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold)}
 .btn.small{padding:.4rem .7rem;font-size:.78rem}
 .btn[disabled]{opacity:.5;cursor:default}
@@ -325,10 +331,13 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
         <span class="num" id="names-total">244</span>
         <span class="lbl">Names Remembered</span>
       </div>
-    </div>
-
-    <div class="all-row">
-      <button class="btn" id="light-all" type="button">Light Candles for ALL</button>
+      <div class="all-group">
+        <svg class="all-arrow" viewBox="0 0 48 24" width="48" height="24" aria-hidden="true" focusable="false"><path d="M46 12H6M6 12l9-8M6 12l9 8" fill="none" stroke="#800080" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="all-wrap">
+          <button class="btn" id="light-all" type="button" aria-describedby="all-tip"><span>Light Candles</span><span>FOR ALL</span></button>
+          <div class="all-tip" id="all-tip" role="tooltip">Please take a moment first. Read the names of our faithful departed and pray for each one silently: &ldquo;Eternal rest grant unto them, O Lord, and let perpetual light shine upon them.&rdquo; Praying for the dead is a sacred work of mercy. Honor them with your heart, not just a click.</div>
+        </div>
+      </div>
     </div>
 
     <div class="controls">
@@ -716,7 +725,7 @@ function postCandles(slugs){
 }
 function lightAll(){
   var slugs = allSlugs();
-  if (!window.confirm('Light one candle for each of the '+slugs.length+' names on the Cloud of Witnesses?')) return;
+  if (!window.confirm('Light one candle for each of the '+slugs.length+' names on the Cloud of Witnesses?\n\nBefore you do, please take a moment to pray for them silently: \u201cEternal rest grant unto them, O Lord, and let perpetual light shine upon them.\u201d')) return;
   var b = document.getElementById('light-all');
   b.disabled = true;
   setTimeout(function(){ b.disabled = false; }, 4000);
