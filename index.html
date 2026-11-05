@@ -115,6 +115,8 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 }
 .btn:hover{background:var(--gold-soft)}
 .btn:active{transform:scale(.97)}
+.all-row{display:flex;justify-content:center;margin:-.2rem 0 1.1rem}
+#light-all{font-size:1rem;padding:.7rem 1.6rem}
 .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold)}
 .btn.small{padding:.4rem .7rem;font-size:.78rem}
 .btn[disabled]{opacity:.5;cursor:default}
@@ -323,6 +325,10 @@ footer.app-foot{text-align:center;color:var(--page-ink-muted);font-size:.74rem;p
         <span class="num" id="names-total">244</span>
         <span class="lbl">Names Remembered</span>
       </div>
+    </div>
+
+    <div class="all-row">
+      <button class="btn" id="light-all" type="button">Light Candles for ALL</button>
     </div>
 
     <div class="controls">
@@ -689,6 +695,41 @@ async function lightCandle(slug, btn){
     } catch(e){ /* best effort; local UI already updated */ }
   }
 }
+
+function allSlugs(){
+  var seen = {}, out = [];
+  DECEASED.forEach(function(p){ var s = slugify(p[1],p[0]); if(!seen[s]){ seen[s]=1; out.push(s); } });
+  customTributes.forEach(function(t){ if(!seen[t.slug]){ seen[t.slug]=1; out.push(t.slug); } });
+  return out;
+}
+function postCandles(slugs){
+  return fetch('/api/candles', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({slugs:slugs}) })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d || !d.counts) return;
+      candleCounts = d.counts;
+      Object.keys(candleCounts).forEach(function(k){
+        document.querySelectorAll('[data-count-for="'+k+'"]').forEach(function(c){ c.textContent = candleCounts[k]; });
+      });
+      renderCandleTotal();
+    }).catch(function(){});
+}
+function lightAll(){
+  var slugs = allSlugs();
+  if (!window.confirm('Light one candle for each of the '+slugs.length+' names on the Cloud of Witnesses?')) return;
+  var b = document.getElementById('light-all');
+  b.disabled = true;
+  setTimeout(function(){ b.disabled = false; }, 4000);
+  slugs.forEach(function(s){
+    candleCounts[s] = (candleCounts[s]||0) + 1;
+    document.querySelectorAll('[data-slug="'+s+'"]').forEach(function(x){ x.classList.add('lit'); x.setAttribute('aria-pressed','true'); });
+    document.querySelectorAll('[data-count-for="'+s+'"]').forEach(function(c){ c.textContent = candleCounts[s]; });
+  });
+  renderCandleTotal();
+  spawnParticles(b);
+  if (!dbNs) postCandles(slugs);
+}
+document.getElementById('light-all').addEventListener('click', lightAll);
 
 document.addEventListener('click', function(e){
   var btn = e.target.closest('.candle-btn');

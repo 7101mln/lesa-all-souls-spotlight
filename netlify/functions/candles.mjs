@@ -18,18 +18,22 @@ export default async (req) => {
   }
 
   if (req.method === "POST") {
-    let slug;
-    try { slug = (await req.json()).slug; } catch { return json({ error: "bad json" }, 400); }
-    if (typeof slug !== "string" || !SLUG_RE.test(slug)) return json({ error: "bad slug" }, 400);
+    let body;
+    try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
+    // Single { slug } or batch { slugs: [...] }; each listed name gets exactly +1.
+    let slugs = Array.isArray(body.slugs) ? body.slugs : [body.slug];
+    slugs = [...new Set(slugs)];
+    if (slugs.length < 1 || slugs.length > 1000) return json({ error: "bad slugs" }, 400);
+    if (!slugs.every((x) => typeof x === "string" && SLUG_RE.test(x))) return json({ error: "bad slug" }, 400);
 
     // Atomic read-modify-write using ETag compare-and-swap, with retries.
     for (let attempt = 0; attempt < 8; attempt++) {
       const cur = await store.getWithMetadata(KEY, { type: "json" });
       const data = cur ? cur.data : { total: 0, counts: {} };
-      if (!(slug in data.counts) && Object.keys(data.counts).length >= MAX_KEYS)
-        return json({ error: "limit" }, 400);
-      data.counts[slug] = (data.counts[slug] || 0) + 1;
-      data.total = (data.total || 0) + 1;
+      const fresh = slugs.filter((x) => !(x in data.counts)).length;
+      if (fresh && Object.keys(data.counts).length + fresh > MAX_KEYS) return json({ error: "limit" }, 400);
+      for (const x of slugs) data.counts[x] = (data.counts[x] || 0) + 1;
+      data.total = (data.total || 0) + slugs.length;
       const res = cur
         ? await store.setJSON(KEY, data, { onlyIfMatch: cur.etag })
         : await store.setJSON(KEY, data, { onlyIfNew: true });
